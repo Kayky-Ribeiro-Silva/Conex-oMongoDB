@@ -83,22 +83,6 @@ function construirDocumento(){
 }
 
 /* Lógica de Gerção (JSON E PDF) */
-/* Evento para gerar o documento JSON no formato MongoDB */
-form.addEventListener("submit", e =>{
-    e.preventDefault();
-    const documento = construirDocumento();
-
-    /* Criar uma cópia do objeto para formatar as datas para o mongoDB */
-    const documentMongo = JSON.parse(JSON.stringify(documento));
-    documentMongo.data_envio = {"$date": documento.data_envio};
-    documentMongo.revisoes.forEach(rev => {
-        rev.data = {"$date": rev.data };
-    });
-
-    /* Exibe o JSON formatado na tela */
-    output.textContent = JSON.stringify(documentMongo, null, 2);
-});
-
 /* Evento para o botão de gerar o relatório em PDF */
 gerarPdfBtn.addEventListener("click", () =>{
     const doc = construirDocumento();
@@ -134,4 +118,110 @@ gerarPdfBtn.addEventListener("click", () =>{
     y += 7;
     pdf.setFontSize(12);
     pdf.text(`- Nome: ${doc.resposavel.nome}`, 25, y);
-})
+    y += 7;
+    pdf.text(`- cargo: ${doc.resposavel.cargo}`, 25, y);
+    y += 7;
+    pdf.text(`- Departamneto: ${doc.resposavel.departamento}`, 25, y);
+    y += 15;
+    
+    /* Seção de Palavra-Chaves */
+    pdf.setFontSize(14);
+    pdf.text("Palavras-chave", 20, y);
+    y += 7;
+    pdf.setFontSize(12);
+    pdf.text(doc.palavras_chaves.join(', '), 25, y);
+    y += 15;
+
+    /* Seção de Revisão com quebra de linha automática */
+    pdf.setFontSize(14);
+    pdf.text("Revisões", 20, y);
+    y += 7;
+    pdf.setFontSize(12);
+
+    if(doc.revisoes.length > 0){
+        doc.revisoes.forEach((rev, index) => {
+            if(index > 0) y += 5;
+
+            pdf.text(` Revisões ${index + 1}:`, 25, y);
+            y += 7;
+            pdf.text(`- Data: ${new Date(rev.data).toLocaleDateString('pt-BR')}`, 30, y);
+            y += 7;
+            pdf.text(`- Revisor: ${rev.revisado_por}`, 30, y);
+            y += 7;
+
+            /* Lógica de quebra de linha para o comentário */
+            const maxWidth = 165; /* Largura máxima do texto na página */
+            const comentarioLines = pdf.splitTextToSize(`- Comentário: ${rev.comentario}`, maxWidth);
+
+            pdf.text(comentarioLines, 30, y);
+
+            /* Atualiza a posição 'y' com base na quantidade de linhas do comnetário */
+            y += (comentarioLines.length * 5) + 5;
+        });
+    } else{
+        pdf.text("Nenhuma revisão adicionada.", 25, y);
+    }
+
+    /* Inicia o download do arquivo PDF gerado */
+    pdf.save(`${doc.titulo.replace(/ /g, '_')}.pdf`)
+});
+
+/* Função de copiar json */
+copyBtn.addEventListener("click", () =>{
+    const textoParaCopiar = output.textContent;
+
+    if(textoParaCopiar.trim() === ""){
+        alert("Gere um documento primeiro para poder copiar!");
+        return;
+    }
+
+    navigator.clipboard.writeText(textoParaCopiar).then(() => {
+        const textoOriginal = copyBtn.textContent;
+        copyBtn.textContent = "✅ Copiado!";
+        setTimeout(() =>{
+            copyBtn.textContent = textoOriginal;
+        }, 2000);
+    }).catch(err =>{
+        console.error("Falha ao copiar o texto: ", err);
+        alert("Ocorreu um erro ao tentar copiar.");
+    }); 
+});
+
+/* Gera JSON e envia para o back-end ao submeter o formulário */
+form.addEventListener("submit", async e =>{
+    e.preventDefault();
+
+    /* 1. Constrói oj objeto do documento com antes */
+    const documento = construirDocumento();
+
+    /* 2. Exibe o JSON na tela (para manter a funcionalidade original) */
+    const documentMongo = JSON.parse(JSON.stringify(documento));
+    documentMongo.data_envio = {"$date": documento.data_envio };
+    documentMongo.revisoes.forEach(rev => {
+        rev.data = {"$date": rev.data};
+    });
+    output.textContent = JSON.stringify(documentMongo, null, 2);
+
+    /* 3. Envio os dados para o back end */
+    try{
+        const reponse = await fetch('http://localhost:3000/salvar-relatorio', {
+            method: 'POST',
+            headers:{
+                'Content-type':'application/json',
+            },
+            /* Enviamos o objeto 'documento' original, sem o formato "$date" */
+            body: JSON.stringify(documento),
+        });
+
+        const result = await reponse.json();
+
+        if(reponse.ok){
+            alert('Relatório salvo no banco de dados com sucesso');
+        }else{
+            alert('Falah ao salvar no banco de dados: ' + result.message);
+        }
+    }catch(error){
+        console.error('Erro de comunicação com o servidor: ', error);
+        alert('Não foi possível conectar ao servidor. Verifique se o Back-end está rodando.');
+    }
+});

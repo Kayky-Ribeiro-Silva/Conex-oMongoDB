@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Relatório de Atividades</h1>
+    <h1>Relatório de Atividade</h1>
 
     <form id="documentForm">
         <fieldset>
@@ -20,24 +20,27 @@
                 <option value="Relatório">Relatório</option>
                 <option value="Planejamento">Planejamento</option>
             </select>
+
+            <label >Ano:</label>
+            <input type="number" id="ano" min="1900" max="2100" required>
+
+            <label>Status:</label>
+            <select id="status">
+                <option value="Aprovado">Aprovado</option>
+                <option value="Em revisão">Em revisão</option>
+                <option value="Cancelado">Cancelado</option>
+            </select>
+
+            <label>Data de envio:</label>
+            <input type="datetime-local" id="data_envio" required>
         </fieldset>
-
-        <label>Status:</label>
-        <select id="status">
-            <option value="Aprovado">Aprovado</option>
-            <option value="Em Revsião">Em Revsião</option>
-            <option value="Cancelado">Cancelado</option>
-        </select>
-
-        <label>Data de Envio</label>
-        <input: type = "datetime-local" id="nome_reponsavel" required>
 
         <fieldset>
             <legend>Responsável</legend>
             <label>Nome</label>
             <input type="text" id="nome_responsavel" required>
 
-            <label>Crago:</label>
+            <label>Cargo:</label>
             <input type="text" id="cargo_responsavel" required>
 
             <label>Departamento:</label>
@@ -52,7 +55,7 @@
 
         <fieldset>
             <legend>Revisão</legend>
-            <div id="revisoesContainer">
+            <div id="revisoesContainer"></div>
             <button id="addRevisao">+ Adicionar Revisão</button>
         </fieldset>
 
@@ -64,9 +67,8 @@
 
     <div class="header-container">
         <h2>Documento Gerado</h2>
-        <button type="button" id="copyJsonBtn" class="copy-btn">Copiar JSNO</button>
+        <button type="button" id="copyJsonBtn" class="copy-btn">Copiar JSON</button>
     </div>
-
     <pre id="jsonOutput"></pre>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="script.js"></script>
